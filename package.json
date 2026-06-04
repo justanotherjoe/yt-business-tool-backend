@@ -1,0 +1,19 @@
+{
+  "name": "yt-business-tool-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "anthropic": "^0.24.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "node-fetch": "^2.7.0",
+    "youtube-transcript": "^1.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
