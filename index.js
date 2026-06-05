@@ -19,18 +19,7 @@ if (!YT_KEY || !ANTHROPIC_KEY) {
 
 const anthropic = new Anthropic({ apiKey: ANTHROPIC_KEY });
 
-const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:3000',
-  process.env.FRONTEND_URL,
-].filter(Boolean);
-
-app.use(cors({
-  origin: (origin, cb) => {
-    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-    cb(new Error('Not allowed by CORS'));
-  },
-}));
+app.use(cors());
 
 app.use(express.json());
 
