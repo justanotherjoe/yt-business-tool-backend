@@ -266,7 +266,10 @@ app.get('/api/search', async (req, res) => {
   const q = req.query.q;
   if (!q) return res.status(400).json({ error: 'Missing query param q' });
   try {
-    const url      = `https://www.googleapis.com/youtube/v3/search?part=snippet&type=channel&maxResults=10&q=${encodeURIComponent(q)}&key=${YT_KEY}`;
+    const order = req.query.sort === 'popular' ? 'viewCount'
+            : req.query.sort === 'oldest'  ? 'date'
+            : 'date';
+const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId=${channelId}&maxResults=50&order=${order}&type=video&key=${YT_KEY}`;
     const response = await fetch(url);
     const data     = await response.json();
     if (data.error) return res.status(502).json({ error: data.error.message });
