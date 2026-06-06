@@ -285,10 +285,13 @@ app.get('/api/transcript', async (req, res) => {
 
 // Method 2 — Supadata API
   try {
-    const r2 = await fetch(
-      `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
-      { signal: AbortSignal.timeout(8000) }
-    );
+   const r2 = await fetch(
+  `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
+  {
+    signal: AbortSignal.timeout(8000),
+    headers: { 'x-api-key': process.env.SUPADATA_API_KEY }
+  }
+);
     console.log('Method 2 status:', r2.status);
     if (r2.ok) {
       const data2 = await r2.json();
