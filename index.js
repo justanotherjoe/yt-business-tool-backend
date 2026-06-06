@@ -283,19 +283,25 @@ app.get('/api/transcript', async (req, res) => {
     console.log('Method 1 failed:', e.message);
   }
 
-  // Method 2 — Supadata API
+// Method 2 — Supadata API
   try {
-    const r = await fetch(
+    const r2 = await fetch(
       `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
       { signal: AbortSignal.timeout(8000) }
     );
-    if (r.ok) {
-      const data   = await r.json();
-      const chunks = Array.isArray(data) ? data : (data.transcript || data.content || []);
-      if (chunks.length) {
-        const text = chunks.map(c => c.text || c).join(' ');
+    console.log('Method 2 status:', r2.status);
+    if (r2.ok) {
+      const data2 = await r2.json();
+      console.log('Method 2 data keys:', Object.keys(data2));
+      const chunks2 = Array.isArray(data2) ? data2 : (data2.transcript || data2.content || data2.chunks || []);
+      console.log('Method 2 chunks length:', chunks2.length);
+      if (chunks2.length) {
+        const text = chunks2.map(c => c.text || c).join(' ');
         return res.json({ transcript: text, wordCount: text.split(' ').length });
       }
+    } else {
+      const errText = await r2.text();
+      console.log('Method 2 error response:', errText.slice(0, 200));
     }
   } catch (e) {
     console.log('Method 2 failed:', e.message);
@@ -303,17 +309,23 @@ app.get('/api/transcript', async (req, res) => {
 
   // Method 3 — yt-transcript-api vercel
   try {
-    const r = await fetch(
+    const r3 = await fetch(
       `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}`,
       { signal: AbortSignal.timeout(8000) }
     );
-    if (r.ok) {
-      const data   = await r.json();
-      const chunks = Array.isArray(data) ? data : (data.transcript || []);
-      if (chunks.length) {
-        const text = chunks.map(c => c.text || c).join(' ');
+    console.log('Method 3 status:', r3.status);
+    if (r3.ok) {
+      const data3 = await r3.json();
+      console.log('Method 3 data keys:', Object.keys(data3));
+      const chunks3 = Array.isArray(data3) ? data3 : (data3.transcript || []);
+      console.log('Method 3 chunks length:', chunks3.length);
+      if (chunks3.length) {
+        const text = chunks3.map(c => c.text || c).join(' ');
         return res.json({ transcript: text, wordCount: text.split(' ').length });
       }
+    } else {
+      const errText = await r3.text();
+      console.log('Method 3 error response:', errText.slice(0, 200));
     }
   } catch (e) {
     console.log('Method 3 failed:', e.message);
