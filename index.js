@@ -271,16 +271,59 @@ app.get('/api/videos', async (req, res) => {
 app.get('/api/transcript', async (req, res) => {
   const { videoId } = req.query;
   if (!videoId) return res.status(400).json({ error: 'Missing videoId' });
+
+  // Method 1 — youtube-transcript package
   try {
     const chunks = await YoutubeTranscript.fetchTranscript(videoId);
-    const text   = chunks.map(c => c.text).join(' ');
-    res.json({ transcript: text, wordCount: text.split(' ').length });
-  } catch (err) {
-    res.status(404).json({
-      error:  'Transcript not available for this video.',
-      manual: true,
-    });
+    if (chunks && chunks.length) {
+      const text = chunks.map(c => c.text).join(' ');
+      return res.json({ transcript: text, wordCount: text.split(' ').length });
+    }
+  } catch (e) {
+    console.log('Method 1 failed:', e.message);
   }
+
+  // Method 2 — Supadata API
+  try {
+    const r = await fetch(
+      `https://api.supadata.ai/v1/youtube/transcript?videoId=${videoId}&lang=en`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (r.ok) {
+      const data   = await r.json();
+      const chunks = Array.isArray(data) ? data : (data.transcript || data.content || []);
+      if (chunks.length) {
+        const text = chunks.map(c => c.text || c).join(' ');
+        return res.json({ transcript: text, wordCount: text.split(' ').length });
+      }
+    }
+  } catch (e) {
+    console.log('Method 2 failed:', e.message);
+  }
+
+  // Method 3 — yt-transcript-api vercel
+  try {
+    const r = await fetch(
+      `https://yt-transcript-api.vercel.app/api/transcript?videoId=${videoId}`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (r.ok) {
+      const data   = await r.json();
+      const chunks = Array.isArray(data) ? data : (data.transcript || []);
+      if (chunks.length) {
+        const text = chunks.map(c => c.text || c).join(' ');
+        return res.json({ transcript: text, wordCount: text.split(' ').length });
+      }
+    }
+  } catch (e) {
+    console.log('Method 3 failed:', e.message);
+  }
+
+  // All methods failed
+  res.status(404).json({
+    error:  'Transcript not available for this video. Please paste it manually.',
+    manual: true,
+  });
 });
 
 app.post('/api/analyze',
