@@ -3,7 +3,7 @@ require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');
 const fetch      = require('node-fetch');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const Anthropic = require('@anthropic-ai/sdk');
 const { YoutubeTranscript } = require('youtube-transcript');
 const { Pool }   = require('pg');
 const Clerk = require('@clerk/clerk-sdk-node');
@@ -71,7 +71,7 @@ if (missing.length) {
 }
 
 // ── Clients ────────────────────────────────────────────────────────
-const genAI = new GoogleGenerativeAI(GEMINI_KEY);
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -403,11 +403,13 @@ app.post('/api/analyze',
       : transcript;
 
     try {
-     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
-      const result   = await model.generateContent(
-        `${systemPrompt}\n\nTranscript:\n\n${truncated}`
-      );
-      const raw     = result.response.text();
+  const message = await anthropic.messages.create({
+  model:      'claude-sonnet-4-5',
+  max_tokens: 1024,
+  system:     systemPrompt,
+  messages:   [{ role: 'user', content: `Transcript:\n\n${truncated}` }],
+});
+const raw     = message.content.find(b => b.type === 'text')?.text || '{}';
 const cleaned = raw
   .replace(/```json\s*/gi, '')
   .replace(/```\s*/gi, '')
