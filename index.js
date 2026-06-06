@@ -280,10 +280,10 @@ const url = `https://www.googleapis.com/youtube/v3/search?part=snippet&channelId
       thumbnail:   item.snippet.thumbnails?.default?.url || '',
     }));
     res.json({ channels });
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to search YouTube channels' });
+} catch (err) {
+    console.error('Search route error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to search YouTube channels', detail: err.message });
   }
-});
 
 app.get('/api/videos', async (req, res) => {
   const { channelId } = req.query;
