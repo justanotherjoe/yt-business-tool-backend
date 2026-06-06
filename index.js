@@ -372,9 +372,14 @@ app.post('/api/analyze',
       const result   = await model.generateContent(
         `${systemPrompt}\n\nTranscript:\n\n${truncated}`
       );
-      const raw      = result.response.text();
-      const cleaned  = raw.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-      const parsed   = JSON.parse(cleaned);
+      const raw     = result.response.text();
+const cleaned = raw
+  .replace(/```json\s*/gi, '')
+  .replace(/```\s*/gi, '')
+  .replace(/^[^{[]*/, '')
+  .replace(/[^}\]]*$/, '')
+  .trim();
+const parsed  = JSON.parse(cleaned);
 
       await pool.query(
         `UPDATE users SET analyses_this_month = analyses_this_month + 1
