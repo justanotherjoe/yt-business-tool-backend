@@ -6,7 +6,42 @@ const fetch      = require('node-fetch');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { YoutubeTranscript } = require('youtube-transcript');
 const { Pool }   = require('pg');
-const { ClerkExpressRequireAuth, ClerkExpressWithAuth } = require('@clerk/clerk-sdk-node');
+const Clerk = require('@clerk/clerk-sdk-node');
+const ClerkExpressRequireAuth = () => async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Unauthenticated' });
+    }
+    const token = authHeader.split(' ')[1];
+    const payload = await Clerk.verifyToken(token, {
+      secretKey: process.env.CLERK_SECRET_KEY,
+    });
+    req.auth = { userId: payload.sub, sessionClaims: payload };
+    next();
+  } catch (err) {
+    console.error('Auth error:', err.message);
+    return res.status(401).json({ error: 'Unauthenticated' });
+  }
+};
+
+const ClerkExpressWithAuth = () => async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.split(' ')[1];
+      const payload = await Clerk.verifyToken(token, {
+        secretKey: process.env.CLERK_SECRET_KEY,
+      });
+      req.auth = { userId: payload.sub, sessionClaims: payload };
+    } else {
+      req.auth = {};
+    }
+  } catch (err) {
+    req.auth = {};
+  }
+  next();
+};
 const stripe     = require('stripe')(process.env.STRIPE_SECRET_KEY);
 
 const app  = express();
