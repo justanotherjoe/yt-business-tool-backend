@@ -126,7 +126,7 @@ async function checkAnalysisLimit(req, res, next) {
     await pool.query(`UPDATE users SET analyses_this_month=0, analyses_reset_at=NOW() WHERE clerk_user_id=$1`, [clerkUserId]);
     user.analyses_this_month = 0;
   }
-  const limits = { free: 5, growth: Infinity, pro: Infinity };
+  const limits = { free: 5, growth: 50, pro: Infinity };
   const limit  = limits[user.tier] ?? 5;
   if (user.analyses_this_month >= limit)
     return res.status(403).json({ error: 'Monthly analysis limit reached', limit, tier: user.tier, upgrade: true });
