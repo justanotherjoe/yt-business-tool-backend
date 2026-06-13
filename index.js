@@ -105,6 +105,15 @@ async function initDB() {
       icon TEXT DEFAULT '📁', color TEXT DEFAULT '#D1E0FF', created_at TIMESTAMPTZ DEFAULT NOW(),
       UNIQUE(clerk_user_id, name)
     );
+    CREATE TABLE IF NOT EXISTS saved_channels (
+      id                SERIAL PRIMARY KEY,
+      clerk_user_id     TEXT NOT NULL,
+      channel_id        TEXT NOT NULL,
+      channel_name      TEXT NOT NULL,
+      channel_thumbnail TEXT,
+      saved_at          TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(clerk_user_id, channel_id)
+    );
   `);
   console.log('Database tables ready');
 }
@@ -357,4 +366,49 @@ initDB().then(() => {
 }).catch(err => {
   console.error('Database init failed:', err);
   process.exit(1);
+});
+
+// ── Saved channels ─────────────────────────────────────────────────
+// Table is created in initDB — adding routes here
+
+app.get('/api/channels/saved', ClerkExpressRequireAuth(), async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM saved_channels WHERE clerk_user_id=$1 ORDER BY saved_at DESC',
+      [req.auth.userId]
+    );
+    res.json({ channels: result.rows });
+  } catch (err) {
+    console.error('Get saved channels error:', err.message);
+    res.status(500).json({ error: 'Failed to fetch saved channels' });
+  }
+});
+
+app.post('/api/channels/save', ClerkExpressRequireAuth(), async (req, res) => {
+  const { channelId, channelName, channelThumbnail } = req.body;
+  if (!channelId || !channelName) return res.status(400).json({ error: 'Missing channelId or channelName' });
+  try {
+    const result = await pool.query(
+      `INSERT INTO saved_channels (clerk_user_id, channel_id, channel_name, channel_thumbnail)
+       VALUES ($1,$2,$3,$4) ON CONFLICT (clerk_user_id, channel_id) DO NOTHING RETURNING *`,
+      [req.auth.userId, channelId, channelName, channelThumbnail || null]
+    );
+    res.json({ channel: result.rows[0] || null });
+  } catch (err) {
+    console.error('Save channel error:', err.message);
+    res.status(500).json({ error: 'Failed to save channel' });
+  }
+});
+
+app.delete('/api/channels/saved/:channelId', ClerkExpressRequireAuth(), async (req, res) => {
+  try {
+    await pool.query(
+      'DELETE FROM saved_channels WHERE clerk_user_id=$1 AND channel_id=$2',
+      [req.auth.userId, req.params.channelId]
+    );
+    res.json({ deleted: true });
+  } catch (err) {
+    console.error('Delete saved channel error:', err.message);
+    res.status(500).json({ error: 'Failed to unsave channel' });
+  }
 });
